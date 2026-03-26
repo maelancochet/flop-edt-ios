@@ -333,9 +333,9 @@ struct HeaderTopBar: View {
                 Text("Changer d'EDT")
                 Image(systemName: "chevron.down")
             }
-            .font(.caption.bold())
+            .font(.subheadline.bold())
             .foregroundStyle(.white)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 10)
             .padding(.vertical, 12)
             .background(Color(.systemGray2))
             .cornerRadius(12)

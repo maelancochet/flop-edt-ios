@@ -145,19 +145,16 @@ struct TrayView: View {
     @State private var selectedDepartement: Departement?
     @State private var selectedPeriod: Period?
     @State private var selectedGroupes: Groupes?
-    @State private var filteredCourses: [ScheduledCourse] = []
-    
     @Environment(\.dismiss) var dismiss
     
-    @AppStorage("departementtodownload") var departementtodownload: String = ""
-    @AppStorage("departementdownloaded") var departementdownloaded: String = ""
-    @AppStorage("isEDTDownloaded") var isEDTDownloaded = false
-    @AppStorage("trainprog") var trainprog: String = ""
-    @AppStorage("filtreCM") var filtreCM: String = ""
-    @AppStorage("filtreGroupe") var filtreGroupe: String = ""
-    @AppStorage("filtreSousGroupe") var filtreSousGroupe: String = ""
-    @AppStorage("yearhome") var yearhome: String = ""
-    @AppStorage("showTrayView") var showTrayView: Bool = true
+    @AppStorage(StorageKeys.departement) var departementtodownload: String = ""
+    @State private var isEDTDownloaded = false
+    @AppStorage(StorageKeys.trainprog) var trainprog: String = ""
+    @AppStorage(StorageKeys.filtreCM) var filtreCM: String = ""
+    @AppStorage(StorageKeys.filtreGroupe) var filtreGroupe: String = ""
+    @AppStorage(StorageKeys.filtreSousGroupe) var filtreSousGroupe: String = ""
+    @AppStorage(StorageKeys.yearhome) var yearhome: String = ""
+    @AppStorage(StorageKeys.showTrayView) var showTrayView: Bool = true
     
     // MARK: - Body
     
@@ -184,30 +181,7 @@ struct TrayView: View {
             if shouldShowSaveButton {
                 Button {
                     saveSelection()
-
-                    Task {
-                        guard let cachedData = ScheduleDataManager.shared.cachedData else {
-                            return
-                        }
-
-                        do {
-                            let allCourses = try await ScheduleDataManager.shared.getCoursesForWeek(0, dept: departementtodownload)
-
-                            filteredCourses = CourseFilter.filterCourses(
-                                courses: allCourses,
-                                trainProg: trainprog,
-                                day: "f",
-                                cmGroup: filtreCM,
-                                mainGroup: filtreGroupe,
-                                subGroup: filtreSousGroupe
-                            )
-                            yearhome = String(selectedPeriod?.number ?? 0)
-
-                        } catch {
-                            return
-                        }
-                    }
-
+                    yearhome = String(selectedPeriod?.number ?? 0)
                 } label: {
                     HStack(spacing: 8) {
                         if !isEDTDownloaded {
@@ -288,7 +262,7 @@ struct TrayView: View {
                 Spacer(minLength: 0)
                 
                 Button {
-                    ScheduleDataManager.shared.clearCache()
+                    Task { await ScheduleDataManager.shared.clearCache() }
                     dismiss()
                     let generator = UIImpactFeedbackGenerator(style: .soft)
                     generator.impactOccurred()
@@ -382,7 +356,7 @@ struct TrayView: View {
                 
                 Button {
                     withAnimation(animation) {
-                        ScheduleDataManager.shared.clearCache()
+                        Task { await ScheduleDataManager.shared.clearCache() }
                         isEDTDownloaded = false
                         currentView = .departements
                         let generator = UIImpactFeedbackGenerator(style: .soft)

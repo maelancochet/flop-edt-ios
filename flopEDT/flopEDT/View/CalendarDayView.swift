@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 /// Vue d'une journée complète avec grille horaire de 0h à 24h
 /// Affiche les cours positionnés proportionnellement à leur horaire et durée
@@ -11,10 +10,7 @@ struct CalendarDayView: View {
     let departement: String
     let isToday: Bool
     let isLoadingCourses: Bool
-
-    // Timer pour mettre à jour la ligne rouge en temps réel
-    @State private var currentTime = Date()
-    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    var onRefresh: (() async -> Void)?
 
     // MARK: - Constants
 
@@ -39,106 +35,114 @@ struct CalendarDayView: View {
         CGFloat(totalHours) * hourHeight
     }
 
-    /// Heure actuelle en minutes depuis minuit (se met à jour toutes les minutes)
-    private var currentTimeMinutes: Int {
+    /// Heure actuelle en minutes depuis minuit
+    private func currentTimeMinutes(for date: Date) -> Int {
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: currentTime)
-        let minute = calendar.component(.minute, from: currentTime)
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
         return hour * 60 + minute
     }
 
     /// Position Y du trait rouge (heure actuelle) relatif au début de la timeline (8h)
-    private var currentTimePosition: CGFloat {
-        let minutesSinceStart = currentTimeMinutes - (startHour * 60)
-        // Correction empirique: +23.5 points pour compenser un décalage (même correction que les cours)
+    private func currentTimePosition(for date: Date) -> CGFloat {
+        let minutesSinceStart = currentTimeMinutes(for: date) - (startHour * 60)
         return CGFloat(minutesSinceStart) + 19.5
     }
 
     /// Indique si l'heure actuelle est dans la plage affichée (8h-20h)
-    private var isCurrentTimeInRange: Bool {
-        let currentHour = currentTimeMinutes / 60
+    private func isCurrentTimeInRange(for date: Date) -> Bool {
+        let currentHour = currentTimeMinutes(for: date) / 60
         return currentHour >= startHour && currentHour < endHour
     }
 
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { geometry in
-            ScrollViewReader { proxy in
-                ScrollView(.vertical, showsIndicators: true) {
-                    ZStack(alignment: .topLeading) {
-                        // Grille horaire de fond avec ancres pour le scroll
-                        TimelineGrid(proxy: proxy)
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            GeometryReader { geometry in
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: true) {
+                        ZStack(alignment: .topLeading) {
+                            // Grille horaire de fond avec ancres pour le scroll
+                            TimelineGrid(proxy: proxy)
 
-                        // Cours positionnés sur la timeline
-                        if !isLoadingCourses {
-                            ForEach(courses, id: \.id) { course in
-                                CourseBlock(
-                                    course: course,
-                                    departement: departement,
-                                    hourHeight: hourHeight,
-                                    startHour: startHour
-                                )
+                            // Cours positionnés sur la timeline
+                            if !isLoadingCourses {
+                                ForEach(courses, id: \.id) { course in
+                                    CourseBlock(
+                                        course: course,
+                                        departement: departement,
+                                        hourHeight: hourHeight,
+                                        startHour: startHour
+                                    )
+                                }
                             }
-                        }
 
-                        // Indicateur de chargement
-                        if isLoadingCourses {
-                            VStack {
-                                Spacer()
-                                HStack {
+                            // Indicateur de chargement
+                            if isLoadingCourses {
+                                VStack {
                                     Spacer()
-                                    ProgressView()
-                                        .scaleEffect(1.5)
-                                        .tint(.gray)
+                                    HStack {
+                                        Spacer()
+                                        ProgressView()
+                                            .scaleEffect(1.5)
+                                            .tint(.gray)
+                                        Spacer()
+                                    }
                                     Spacer()
                                 }
-                                Spacer()
+                            }
+
+                            // Trait rouge pour l'heure actuelle (uniquement aujourd'hui et si dans la plage 8h-20h)
+                            if isToday && isCurrentTimeInRange(for: context.date) {
+                                CurrentTimeLine(position: currentTimePosition(for: context.date))
                             }
                         }
-
-                        // Trait rouge pour l'heure actuelle (uniquement aujourd'hui et si dans la plage 8h-20h)
-                        if isToday && isCurrentTimeInRange {
-                            CurrentTimeLine(position: currentTimePosition)
+                        .frame(height: timelineHeight)
+                    }
+                    .refreshable {
+                        await onRefresh?()
+                        // Vibration immédiate dès que les données sont chargées
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                        // Scroll après la fin de l'animation du spinner
+                        if isToday {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                scrollToCurrentTime(proxy: proxy)
+                            }
                         }
                     }
-                    .frame(height: timelineHeight)
-                }
-                .onReceive(timer) { _ in
-                    // Met à jour l'heure actuelle toutes les minutes
-                    currentTime = Date()
-                }
-                .onAppear {
-                    // Auto-scroll sur l'heure actuelle si c'est aujourd'hui
-                    if isToday {
-                        let currentHour = currentTimeMinutes / 60
-
-                        // Déterminer l'heure cible en respectant les limites 8h-20h
-                        let targetHour: Int
-                        if currentHour < startHour {
-                            // Avant 8h : scroll vers 8h
-                            targetHour = startHour
-                        } else if currentHour >= endHour {
-                            // Après 20h : scroll vers 19h (une heure avant la fin pour voir le contexte)
-                            targetHour = endHour - 1
-                        } else {
-                            // Entre 8h et 20h : scroll vers l'heure actuelle - 1
-                            targetHour = max(startHour, currentHour - 1)
-                        }
-
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            withAnimation(.easeOut(duration: 0.5)) {
-                                proxy.scrollTo("hour-\(targetHour)", anchor: .top)
+                    .onAppear {
+                        // Auto-scroll sur l'heure actuelle si c'est aujourd'hui
+                        if isToday {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                scrollToCurrentTime(proxy: proxy)
                             }
                         }
                     }
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
-        .background(Color(.systemGroupedBackground))
     }
 
     // MARK: - Timeline Grid
+
+    /// Scroll animé vers l'heure actuelle sur la timeline
+    private func scrollToCurrentTime(proxy: ScrollViewProxy) {
+        let currentHour = currentTimeMinutes(for: Date()) / 60
+        let targetHour: Int
+        if currentHour < startHour {
+            targetHour = startHour
+        } else if currentHour >= endHour {
+            targetHour = endHour - 1
+        } else {
+            targetHour = max(startHour, currentHour - 1)
+        }
+        withAnimation(.easeOut(duration: 0.5)) {
+            proxy.scrollTo("hour-\(targetHour)", anchor: .top)
+        }
+    }
 
     /// Grille horaire avec lignes et labels d'heures
     @ViewBuilder
@@ -311,6 +315,37 @@ struct CurrentTimeLine: View {
                 .frame(maxWidth: .infinity)
         }
         .offset(y: position)
+    }
+}
+
+// MARK: - Color Extension
+
+extension Color {
+    init?(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+
+        guard Scanner(string: hex).scanHexInt64(&int) else { return nil }
+
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3:
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            return nil
+        }
+
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
 

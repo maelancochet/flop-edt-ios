@@ -7,17 +7,12 @@ struct HomeView: View {
     @State private var currentWeek: [Date.Day] = Date.getWeek(for: .now)
     @State private var selectedDate: Date?
     @State private var weekOffset: Int = 0
-    @AppStorage("showTrayView") var showTrayView: Bool = true
+    @AppStorage(StorageKeys.showTrayView) var showTrayView: Bool = true
     @Namespace private var namespace
     @State private var cachedToday: Date = Calendar.current.startOfDay(for: .now)
     @State private var referenceMondayDate: Date = Date.getMondayOfWeek(for: .now)
     @State private var allFilteredCourses: [ScheduledCourse] = []
     @State private var isLoadingCourses: Bool = false
-
-    // MARK: - Constants
-    
-    /// Maximum number of weeks that can be navigated into the future
-    private let maxWeekOffset: Int = 6
 
     // MARK: - Timers & Publishers
     
@@ -26,45 +21,27 @@ struct HomeView: View {
     
     // MARK: - Filter Settings
     
-    @AppStorage("departementtodownload") var departementtodownload: String = ""
-    @AppStorage("trainprog") var trainprog: String = ""
-    @AppStorage("filtreCM") var filtreCM: String = ""
-    @AppStorage("filtreGroupe") var filtreGroupe: String = ""
-    @AppStorage("filtreSousGroupe") var filtreSousGroupe: String = ""
+    @AppStorage(StorageKeys.departement) var departementtodownload: String = ""
+    @AppStorage(StorageKeys.trainprog) var trainprog: String = ""
+    @AppStorage(StorageKeys.filtreCM) var filtreCM: String = ""
+    @AppStorage(StorageKeys.filtreGroupe) var filtreGroupe: String = ""
+    @AppStorage(StorageKeys.filtreSousGroupe) var filtreSousGroupe: String = ""
+
+    // MARK: - Tray Snapshot (pour détecter les changements)
+
+    @State private var traySnapshot: [String] = []
 
     // MARK: - Computed Properties
-    
-    /// Returns only future days from the current week.
-    /// On weekends, displays the entire following week without filtering.
-    var futureDays: [Date.Day] {
-        let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: Date.now)
-        let isWeekend = (weekday == 1 || weekday == 7)
-        
-        if isWeekend {
-            return currentWeek
-        } else {
-            return currentWeek.filter {
-                Calendar.current.startOfDay(for: $0.date) >= cachedToday
-            }
-        }
-    }
 
     /// Generates the week title displayed in the header.
-    /// Shows "This Week" for the current week, or "Week X" for other weeks.
     var weekTitle: String {
         let firstDayOfWeek = currentWeek.first?.date ?? .now
         let weekNumber = Calendar.current.component(.weekOfYear, from: firstDayOfWeek)
-        
-        let calendar = Calendar.current
-        let today = Date.now
-        let weekday = calendar.component(.weekday, from: today)
-        let isWeekend = (weekday == 1 || weekday == 7)
-        
-        if isWeekend || weekOffset != 0 {
-            return "Semaine \(weekNumber)"
-        } else {
+
+        if weekOffset == 0 {
             return "Cette Semaine"
+        } else {
+            return "Semaine \(weekNumber)"
         }
     }
 
@@ -77,13 +54,17 @@ struct HomeView: View {
 
             GeometryReader { geometry in
                 TabView(selection: $selectedDate) {
-                    ForEach(futureDays) { day in
+                    ForEach(currentWeek) { day in
                         CalendarDayView(
                             day: day.date,
                             courses: getCoursesForDay(day.date),
                             departement: departementtodownload,
                             isToday: Calendar.current.isDate(day.date, inSameDayAs: cachedToday),
-                            isLoadingCourses: isLoadingCourses
+                            isLoadingCourses: isLoadingCourses,
+                            onRefresh: {
+                                await ScheduleDataManager.shared.clearCache()
+                                await loadCoursesAsync()
+                            }
                         )
                         .tag(day.date as Date?)
                     }
@@ -114,58 +95,55 @@ struct HomeView: View {
 
             let calendar = Calendar.current
             let weekday = calendar.component(.weekday, from: now)
-            
-            if weekday == 7 && weekOffset == 0 {
-                referenceMondayDate = Date.getMondayOfWeek(for: now)
-                currentWeek = Date.getWeek(for: now)
-                selectedDate = futureDays.first?.date ?? currentWeek.first?.date
+
+            // Lundi : nouvelle semaine, rafraîchir si on est sur la semaine courante
+            if weekday == 2 && weekOffset == 0 {
+                resetToCurrentWeek()
+                selectedDate = currentWeek.first?.date
                 loadCourses()
-            }
-            else if weekday == 2 && weekOffset == 0 {
-                referenceMondayDate = Date.getMondayOfWeek(for: now)
-                currentWeek = Date.getWeek(for: now)
-                selectedDate = futureDays.first?.date ?? currentWeek.first?.date
             }
         }
         .task {
             guard selectedDate == nil else { return }
-
             let calendar = Calendar.current
             let weekday = calendar.component(.weekday, from: Date.now)
             let isWeekend = (weekday == 1 || weekday == 7)
 
             if isWeekend {
-                let nextMonday = calendar.date(byAdding: .day, value: weekday == 7 ? 2 : 1, to: Date.now)!
-                referenceMondayDate = Date.getMondayOfWeek(for: nextMonday)
-                currentWeek = Date.getWeek(for: nextMonday)
-            } else {
+                // Weekend : avancer à la semaine prochaine et sélectionner lundi
+                guard let nextMonday = calendar.date(byAdding: .day, value: weekday == 7 ? 2 : 1, to: Date.now) else { return }
                 referenceMondayDate = Date.getMondayOfWeek(for: .now)
-                currentWeek = Date.getWeek(for: .now)
+                currentWeek = Date.getWeek(for: nextMonday)
+                weekOffset = 1
+                selectedDate = currentWeek.first?.date
+            } else {
+                resetToCurrentWeek()
+                let today = calendar.startOfDay(for: .now)
+                selectedDate = currentWeek.first(where: {
+                    calendar.isDate($0.date, inSameDayAs: today)
+                })?.date ?? currentWeek.first?.date
             }
-
-            selectedDate = futureDays.first?.date ?? currentWeek.first?.date
             loadCourses()
         }
         .onChange(of: showTrayView) { oldValue, newValue in
+            if oldValue == false && newValue == true {
+                // Ouverture : sauvegarder l'état actuel des filtres
+                traySnapshot = [departementtodownload, trainprog, filtreCM, filtreGroupe, filtreSousGroupe]
+            }
             if oldValue == true && newValue == false {
-                ScheduleDataManager.shared.clearCache()
-
-                let calendar = Calendar.current
-                let weekday = calendar.component(.weekday, from: Date.now)
-                let isWeekend = (weekday == 1 || weekday == 7)
-
-                if isWeekend {
-                    let nextMonday = calendar.date(byAdding: .day, value: weekday == 7 ? 2 : 1, to: Date.now)!
-                    referenceMondayDate = Date.getMondayOfWeek(for: nextMonday)
-                    currentWeek = Date.getWeek(for: nextMonday)
-                } else {
-                    referenceMondayDate = Date.getMondayOfWeek(for: .now)
-                    currentWeek = Date.getWeek(for: .now)
+                let currentState = [departementtodownload, trainprog, filtreCM, filtreGroupe, filtreSousGroupe]
+                // Recharger uniquement si les filtres ont changé
+                if currentState != traySnapshot {
+                    Task { await ScheduleDataManager.shared.clearCache() }
+                    resetToCurrentWeek()
+                    weekOffset = 0
+                    let calendar = Calendar.current
+                    let today = calendar.startOfDay(for: .now)
+                    selectedDate = currentWeek.first(where: {
+                        calendar.isDate($0.date, inSameDayAs: today)
+                    })?.date ?? currentWeek.first?.date
+                    loadCourses()
                 }
-
-                weekOffset = 0
-                selectedDate = futureDays.first?.date
-                loadCourses()
             }
         }
     }
@@ -181,25 +159,10 @@ struct HomeView: View {
     }
     
     /// Version async de loadCourses pour éviter les conflits d'animation
-    private func loadCoursesAsync() async {
+    private func loadCoursesAsync(retryCount: Int = 0) async {
         do {
-            let calendar = Calendar.current
-            let weekday = calendar.component(.weekday, from: Date.now)
-            let isWeekend = (weekday == 1 || weekday == 7)
-            
-            // Calculer l'offset réel pour l'API
-            // Si on est en weekend, referenceMondayDate pointe déjà vers la semaine prochaine
-            // Donc weekOffset = 0 correspond déjà à la semaine prochaine (offset API = 1)
-            // Et weekOffset = 1 correspond à semaine prochaine+1 (offset API = 2), etc.
-            let actualOffset: Int
-            if isWeekend {
-                actualOffset = weekOffset + 1
-            } else {
-                actualOffset = weekOffset
-            }
-            
             let allCourses = try await ScheduleDataManager.shared.getCoursesForWeek(
-                actualOffset,
+                weekOffset,
                 dept: departementtodownload
             )
             
@@ -228,8 +191,9 @@ struct HomeView: View {
             await MainActor.run {
                 isLoadingCourses = false
             }
+            guard retryCount < 3 else { return }
             try? await Task.sleep(nanoseconds: 3_000_000_000)
-            await loadCoursesAsync()
+            await loadCoursesAsync(retryCount: retryCount + 1)
         }
     }
     
@@ -263,7 +227,13 @@ struct HomeView: View {
     }
     
     // MARK: - Helper Methods
-    
+
+    /// Recalcule la semaine courante
+    private func resetToCurrentWeek() {
+        referenceMondayDate = Date.getMondayOfWeek(for: .now)
+        currentWeek = Date.getWeek(for: .now)
+    }
+
     /// Formats a date for debugging purposes
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -275,18 +245,23 @@ struct HomeView: View {
     /// Navigates to a different week relative to the current week
     /// - Parameter offset: Number of weeks to move (positive for future, negative for past)
     private func changeWeek(by offset: Int) {
-        let newOffset = weekOffset + offset
-        guard newOffset >= 0 && newOffset <= maxWeekOffset else { return }
-
         isLoadingCourses = true
-        weekOffset = newOffset
-        
+        weekOffset += offset
+
         let calendar = Calendar.current
-        
+
         if let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: referenceMondayDate) {
             withAnimation(.snappy(duration: 0.25, extraBounce: 0)) {
                 currentWeek = Date.getWeek(for: targetMonday)
-                selectedDate = futureDays.first?.date ?? currentWeek.first?.date
+                // Si on revient sur la semaine courante, sélectionner aujourd'hui
+                if weekOffset == 0 {
+                    let today = calendar.startOfDay(for: .now)
+                    selectedDate = currentWeek.first(where: {
+                        calendar.isDate($0.date, inSameDayAs: today)
+                    })?.date ?? currentWeek.first?.date
+                } else {
+                    selectedDate = currentWeek.first?.date
+                }
             }
         }
 
@@ -319,8 +294,6 @@ struct HomeView: View {
             WeekNavigator(
                 currentWeek: currentWeek,
                 selectedDate: $selectedDate,
-                canGoBack: weekOffset > 0,
-                canGoForward: weekOffset < maxWeekOffset,
                 namespace: namespace,
                 cachedToday: cachedToday,
                 onWeekChange: { offset in
@@ -378,8 +351,6 @@ struct HeaderTopBar: View {
 struct WeekNavigator: View {
     let currentWeek: [Date.Day]
     @Binding var selectedDate: Date?
-    let canGoBack: Bool
-    let canGoForward: Bool
     let namespace: Namespace.ID
     let cachedToday: Date
     let onWeekChange: (Int) -> Void
@@ -387,7 +358,7 @@ struct WeekNavigator: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            NavigationButton(systemName: "chevron.left", enabled: canGoBack, action: { onWeekChange(-1) })
+            NavigationButton(systemName: "chevron.left", enabled: true, action: { onWeekChange(-1) })
             ForEach(currentWeek) { day in
                 DayButton(
                     day: day,
@@ -400,7 +371,7 @@ struct WeekNavigator: View {
                     }
                 )
             }
-            NavigationButton(systemName: "chevron.right", enabled: canGoForward, action: { onWeekChange(1) })
+            NavigationButton(systemName: "chevron.right", enabled: true, action: { onWeekChange(1) })
         }
         .frame(height: 80)
         .padding(.vertical, 5)
@@ -409,9 +380,9 @@ struct WeekNavigator: View {
             DragGesture()
                 .onEnded { value in
                     let threshold: CGFloat = 50
-                    if value.translation.width > threshold && canGoBack {
+                    if value.translation.width > threshold {
                         onWeekChange(-1)
-                    } else if value.translation.width < -threshold && canGoForward {
+                    } else if value.translation.width < -threshold {
                         onWeekChange(1)
                     }
                 }
@@ -447,24 +418,20 @@ struct DayButton: View {
         return Calendar.current.isDate(day.date, inSameDayAs: selectedDate)
     }
 
-    private var isPastDate: Bool {
-        Calendar.current.startOfDay(for: day.date) < cachedToday
-    }
-
     var body: some View {
         VStack(spacing: 6) {
             Text(day.date.string("EEE"))
                 .font(.caption)
-                .foregroundStyle(isPastDate ? .gray.opacity(0.5) : .white)
+                .foregroundStyle(.white)
                 .animation(.smooth(duration: 0.3), value: isSameDate)
 
             Text(day.date.string("dd"))
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundStyle(isPastDate ? .gray.opacity(0.5) : (isSameDate ? .black : .white))
+                .foregroundStyle(isSameDate ? .black : .white)
                 .frame(width: 38, height: 38)
                 .background {
-                    if isSameDate && !isPastDate {
+                    if isSameDate {
                         Circle()
                             .fill(.white)
                             .matchedGeometryEffect(id: "ACTIVEDATE", in: namespace)
@@ -475,17 +442,15 @@ struct DayButton: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(.rect)
         .onTapGesture {
-            guard !isPastDate else { return }
             onSelect()
         }
-        .opacity(isPastDate ? 0.6 : 1.0)
     }
 }
 
 struct MonthYearDisplay: View {
-    @AppStorage("departementtodownload") var departementtodownload: String = ""
-    @AppStorage("yearhome") var yearhome: String = ""
-    @AppStorage("filtreSousGroupe") var filtreSousGroupe: String = ""
+    @AppStorage(StorageKeys.departement) var departementtodownload: String = ""
+    @AppStorage(StorageKeys.yearhome) var yearhome: String = ""
+    @AppStorage(StorageKeys.filtreSousGroupe) var filtreSousGroupe: String = ""
     
     let selectedDate: Date?
 
@@ -509,7 +474,7 @@ struct MonthYearDisplay: View {
 extension Date {
     /// A simple wrapper holding a date, used to represent a single day in a week.
     struct Day: Identifiable {
-        let id = UUID()
+        var id: Date { date }
         let date: Date
     }
 
@@ -521,26 +486,12 @@ extension Date {
         return formatter.string(from: self)
     }
 
-    /// Generates a week array starting from Monday for a given date
-    /// Handles weekend logic: Saturday advances to next week's Monday
+    /// Generates a week array (Monday through Friday) for the week containing the given date
     /// - Parameter date: The reference date
     /// - Returns: Array of 5 weekdays (Monday through Friday)
     static func getWeek(for date: Date) -> [Date.Day] {
         let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: date)
-
-        let monday: Date
-        switch weekday {
-        case 2...6:
-            monday = calendar.date(byAdding: .day, value: -(weekday - 2), to: date)!
-        case 7:
-            monday = calendar.date(byAdding: .day, value: 2, to: date)!
-        case 1:
-            monday = calendar.date(byAdding: .day, value: 1, to: date)!
-        default:
-            monday = date
-        }
-
+        let monday = getMondayOfWeek(for: date)
         let startOfMonday = calendar.startOfDay(for: monday)
         return (0..<5).compactMap { i in
             calendar.date(byAdding: .day, value: i, to: startOfMonday).map { Date.Day(date: $0) }

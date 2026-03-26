@@ -169,7 +169,8 @@ class GroupHierarchyManager: ObservableObject {
     }
     
     // MARK: - Structures de données par département
-    
+    // TODO: Charger ces structures depuis l'API ou un fichier JSON embarqué au lieu de les hardcoder
+
     private func getINFOStructure() -> [GroupNode] {
         return [
             GroupNode(parent: "null", promo: "BUT1", promotxt: "BUT1", row: 0, name: "CE", buttxt: "BUT1", children: [

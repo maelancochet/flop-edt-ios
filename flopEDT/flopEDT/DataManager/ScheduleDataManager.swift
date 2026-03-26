@@ -3,19 +3,18 @@ import Foundation
 // MARK: - Schedule Data Manager
 
 /// Gestionnaire centralisé pour le téléchargement et la mise en cache des emplois du temps
-class ScheduleDataManager {
+actor ScheduleDataManager {
     
     // MARK: - Singleton
     
     static let shared = ScheduleDataManager()
     
     // MARK: - Properties
-    
+
+    private let baseURL = "https://flopedt.iut-blagnac.fr/fr/api"
+
     /// Cache des données brutes par semaine
     private var weekCache: [String: Data] = [:]
-    
-    /// Cache des données JSON décodées par semaine
-    private var weekJSON: [String: Any] = [:]
     
     // MARK: - Initialization
     
@@ -26,7 +25,6 @@ class ScheduleDataManager {
     /// Vide tous les caches de données
     func clearCache() {
         weekCache.removeAll()
-        weekJSON.removeAll()
     }
     
     /// Retourne les données mises en cache pour une semaine spécifique
@@ -35,9 +33,9 @@ class ScheduleDataManager {
         return weekCache[key]
     }
     
-    /// Retourne les premières données disponibles en cache
-    var cachedData: Data? {
-        return weekCache.values.first
+    /// Vérifie si des données sont en cache
+    var hasCachedData: Bool {
+        !weekCache.isEmpty
     }
 
     // MARK: - Network Methods
@@ -56,7 +54,7 @@ class ScheduleDataManager {
             return cached
         }
         
-        let urlString = "https://flopedt.iut-blagnac.fr/fr/api/fetch/scheduledcourses/?dept=\(dept)&week=\(week)&year=\(year)&work_copy=\(workCopy)"
+        let urlString = "\(baseURL)/fetch/scheduledcourses/?dept=\(dept)&week=\(week)&year=\(year)&work_copy=\(workCopy)"
 
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
@@ -70,11 +68,7 @@ class ScheduleDataManager {
         }
 
         weekCache[key] = data
-        
-        if let json = try? JSONSerialization.jsonObject(with: data) {
-            weekJSON[key] = json
-        }
-        
+
         return data
     }
     

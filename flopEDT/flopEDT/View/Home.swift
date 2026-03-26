@@ -335,7 +335,7 @@ struct HeaderTopBar: View {
             }
             .font(.subheadline.bold())
             .foregroundStyle(.white)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 12)
             .padding(.vertical, 12)
             .background(Color(.systemGray2))
             .cornerRadius(12)

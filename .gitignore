@@ -4,24 +4,58 @@ DerivedData/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 *.pbxuser
+!default.pbxuser
 *.mode1v3
+!default.mode1v3
 *.mode2v3
+!default.mode2v3
 *.perspectivev3
+!default.perspectivev3
 xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Interface Builder
+*.xccheckout
+*.xcscmblueprint
 
 # Swift Package Manager
 .build/
+.swiftpm/
 Packages/
+Package.resolved
 
 # CocoaPods
 Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
 
 # Divers
-.DS_Store
 *.swp
 *.lock
 Thumbs.db
+*.log
 
-# Env / secrets
+# Secrets / Env
 .env
-*.plist.secret
+*.secret

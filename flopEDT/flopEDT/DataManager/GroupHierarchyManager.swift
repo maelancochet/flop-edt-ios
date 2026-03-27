@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 import Combine
 
-// MARK: - Modèles de données
 struct GroupNode: Codable {
     let parent: String?
     let promo: String?
@@ -11,7 +10,7 @@ struct GroupNode: Codable {
     let name: String
     let buttxt: String?
     let children: [GroupNode]?
-    
+
     init(parent: String? = nil, promo: String? = nil, promotxt: String? = nil,
          row: Int? = nil, name: String, buttxt: String? = nil, children: [GroupNode]? = nil) {
         self.parent = parent
@@ -24,45 +23,33 @@ struct GroupNode: Codable {
     }
 }
 
-// MARK: - Gestionnaire de structure hiérarchique
 class GroupHierarchyManager: ObservableObject {
     @Published var departement: String = ""
     @Published var annee: String = ""
     @Published var groupe: String = ""
     @Published var result: [String] = []
     @Published var errorMessage: String = ""
-    
-    // Fonction principale qui retourne la structure selon le département
-    func handleStruct(for dept: String) -> [GroupNode] {
-        switch dept {
-        case "INFO":
-            return getINFOStructure()
-        case "CS":
-            return getCSStructure()
-        case "GIM":
-            return getGIMStructure()
-        case "RT":
-            return getRTStructure()
-        case "LPMA":
-            return getLPMAStructure()
-        default:
-            return []
-        }
-    }
-    
-    // Variables pour stocker les parents
     @Published var parent1: String = ""
     @Published var parent2: String = ""
-    
-    //  Recherche le chemin d'un groupe avec paramètres
+
+    func handleStruct(for dept: String) -> [GroupNode] {
+        switch dept {
+        case "INFO": return getINFOStructure()
+        case "CS": return getCSStructure()
+        case "GIM": return getGIMStructure()
+        case "RT": return getRTStructure()
+        case "LPMA": return getLPMAStructure()
+        default: return []
+        }
+    }
+
     func getGroupPath(departement: String, annee: String, groupe: String) -> [String] {
-        // Mettre à jour les propriétés
         self.departement = departement
         self.annee = annee
         self.groupe = groupe
-        
+
         let data = handleStruct(for: departement)
-        
+
         if data.isEmpty {
             errorMessage = "Département invalide"
             result = []
@@ -70,23 +57,16 @@ class GroupHierarchyManager: ObservableObject {
             parent2 = ""
             return []
         }
-        
-        // Déterminer la promo à rechercher
+
         let promoSearch: String?
         switch departement {
-        case "INFO", "RT":
-            promoSearch = "BUT\(annee)"
-        case "CS":
-            promoSearch = "CS\(annee)"
-        case "GIM":
-            promoSearch = "GIM\(annee)"
-        case "LPMA":
-            promoSearch = "LPMA"
-        default:
-            promoSearch = nil
+        case "INFO", "RT": promoSearch = "BUT\(annee)"
+        case "CS": promoSearch = "CS\(annee)"
+        case "GIM": promoSearch = "GIM\(annee)"
+        case "LPMA": promoSearch = "LPMA"
+        default: promoSearch = nil
         }
-        
-        // Chercher dans la bonne promo
+
         if let promo = promoSearch {
             for promoData in data {
                 if promoData.promo == promo {
@@ -99,8 +79,7 @@ class GroupHierarchyManager: ObservableObject {
                 }
             }
         }
-        
-        // Si pas trouvé avec la promo, chercher partout
+
         if let path = findGroup(in: data, target: groupe) {
             result = path
             errorMessage = ""
@@ -114,26 +93,15 @@ class GroupHierarchyManager: ObservableObject {
             return []
         }
     }
-    
-    // Fonction pour extraire les deux parents du chemin
+
     private func extractParents(from path: [String]) {
-        // Le chemin peut être:
-        // - [Promo, Parent1, Parent2, Groupe] : 4 éléments
-        // - [Promo, Parent1, Groupe] : 3 éléments (les 2 éléments du milieu sont les parents)
-        // - [Promo, Groupe] : 2 éléments
-        
         if path.count >= 4 {
-            // Cas avec 2 parents: [Promo, Parent1, Parent2, Groupe]
-            // Ex: ["CE", "12", "1", "1A"]
             parent1 = path[1]
             parent2 = path[2]
         } else if path.count == 3 {
-            // Cas avec 2 éléments au milieu: [Promo, Parent1, Parent2/Groupe]
-            // Ex: ["CE", "2", "2B"] -> parent1="CE", parent2="2"
             parent1 = path[0]
             parent2 = path[1]
         } else if path.count == 2 {
-            // Cas direct: [Promo, Groupe]
             parent1 = path[0]
             parent2 = ""
         } else {
@@ -141,24 +109,19 @@ class GroupHierarchyManager: ObservableObject {
             parent2 = ""
         }
     }
-    
-    // ANCIENNE VERSION : Compatible avec le code existant
+
     func getGroupPath() {
         _ = getGroupPath(departement: departement, annee: annee, groupe: groupe)
     }
-    
-    // Fonction récursive pour trouver un groupe
+
     private func findGroup(in nodes: [GroupNode], target: String, path: [String] = []) -> [String]? {
         for node in nodes {
-            let nodeName = node.name
-            let currentPath = path + [nodeName]
-            
-            // Si c'est le groupe recherché
-            if nodeName == target {
+            let currentPath = path + [node.name]
+
+            if node.name == target {
                 return currentPath
             }
-            
-            // Chercher dans les enfants
+
             if let children = node.children, !children.isEmpty {
                 if let result = findGroup(in: children, target: target, path: currentPath) {
                     return result
@@ -167,9 +130,8 @@ class GroupHierarchyManager: ObservableObject {
         }
         return nil
     }
-    
-    // MARK: - Structures de données par département
-    // TODO: Charger ces structures depuis l'API ou un fichier JSON embarqué au lieu de les hardcoder
+
+    // TODO: Charger ces structures depuis l'API au lieu de les hardcoder
 
     private func getINFOStructure() -> [GroupNode] {
         return [
@@ -209,7 +171,7 @@ class GroupHierarchyManager: ObservableObject {
             GroupNode(parent: "null", promo: "BUT3", promotxt: "BUT3", row: 0, name: "CE", buttxt: "BUT3", children: [])
         ]
     }
-    
+
     private func getCSStructure() -> [GroupNode] {
         return [
             GroupNode(parent: "null", promo: "CS1", promotxt: "CS1", row: 0, name: "CS1", children: [
@@ -238,7 +200,7 @@ class GroupHierarchyManager: ObservableObject {
             ])
         ]
     }
-    
+
     private func getGIMStructure() -> [GroupNode] {
         return [
             GroupNode(parent: "null", promo: "GIM1", promotxt: "GIM1", row: 0, name: "GIM1", children: [
@@ -272,7 +234,7 @@ class GroupHierarchyManager: ObservableObject {
             ])
         ]
     }
-    
+
     private func getRTStructure() -> [GroupNode] {
         return [
             GroupNode(parent: "null", promo: "BUT1", promotxt: "BUT1", row: 0, name: "BUT1", children: [
@@ -317,7 +279,7 @@ class GroupHierarchyManager: ObservableObject {
             ])
         ]
     }
-    
+
     private func getLPMAStructure() -> [GroupNode] {
         return [
             GroupNode(parent: "null", promo: "LPMA", promotxt: "LPMA", row: 0, name: "LPMA", children: [
@@ -328,10 +290,9 @@ class GroupHierarchyManager: ObservableObject {
     }
 }
 
-// MARK: - Vue SwiftUI exemple
 struct GroupSearchView: View {
     @StateObject private var manager = GroupHierarchyManager()
-    
+
     var body: some View {
         Form {
             Section("Recherche de groupe") {
@@ -342,30 +303,30 @@ struct GroupSearchView: View {
                     Text("RT").tag("RT")
                     Text("LPMA").tag("LPMA")
                 }
-                
+
                 TextField("Année", text: $manager.annee)
                     .keyboardType(.numberPad)
-                
+
                 TextField("Groupe", text: $manager.groupe)
             }
-            
+
             Section {
                 Button("Rechercher") {
                     manager.getGroupPath()
                 }
             }
-            
+
             if !manager.result.isEmpty {
                 Section("Résultat") {
                     Text("Chemin: \(manager.result.joined(separator: " > "))")
                         .font(.caption)
-                    
+
                     ForEach(Array(manager.result.dropLast().enumerated()), id: \.offset) { index, parent in
                         Text("Niveau \(index): \(parent)")
                     }
                 }
             }
-            
+
             if !manager.errorMessage.isEmpty {
                 Section {
                     Text(manager.errorMessage)
@@ -376,7 +337,6 @@ struct GroupSearchView: View {
         .navigationTitle("Recherche de groupe")
     }
 }
-
 
 #Preview {
     GroupSearchView()

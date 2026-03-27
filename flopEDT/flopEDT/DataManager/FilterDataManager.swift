@@ -1,9 +1,5 @@
 import Foundation
 
-
-// MARK: - Data Models
-
-/// Représente un cours programmé dans l'emploi du temps
 struct ScheduledCourse: Codable {
     let id: Int
     let room: ScheduleRoom
@@ -13,7 +9,7 @@ struct ScheduledCourse: Codable {
     let tutor: String?
     let idVisio: String?
     let number: Int
-    
+
     enum CodingKeys: String, CodingKey {
         case id, room, day, course, tutor, number
         case startTime = "start_time"
@@ -21,13 +17,11 @@ struct ScheduledCourse: Codable {
     }
 }
 
-/// Représente une salle de cours
 struct ScheduleRoom: Codable {
     let id: Int
     let name: String
 }
 
-/// Représente les détails d'un cours
 struct ScheduleCourse: Codable {
     let id: Int
     let type: String
@@ -39,7 +33,7 @@ struct ScheduleCourse: Codable {
     let module: ScheduleModule
     let payModule: ScheduleModule?
     let isGraded: Bool
-    
+
     enum CodingKeys: String, CodingKey {
         case id, type, week, year, groups, module
         case roomType = "room_type"
@@ -49,13 +43,13 @@ struct ScheduleCourse: Codable {
     }
 }
 
-/// Représente un tuteur supplémentaire avec gestion flexible du format JSON
+/// L'API renvoie les tuteurs tantôt comme String, tantôt comme objet {name: String}
 struct SuppTutor: Codable {
     let name: String
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         if let stringValue = try? container.decode(String.self) {
             self.name = stringValue
         } else if let dict = try? container.decode([String: String].self),
@@ -65,20 +59,19 @@ struct SuppTutor: Codable {
             self.name = ""
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(name)
     }
 }
 
-/// Représente un groupe d'étudiants
 struct ScheduleGroup: Codable {
     let id: Int
     let trainProg: String
     let name: String
     let isStructural: Bool
-    
+
     enum CodingKeys: String, CodingKey {
         case id, name
         case trainProg = "train_prog"
@@ -86,38 +79,23 @@ struct ScheduleGroup: Codable {
     }
 }
 
-/// Représente un module d'enseignement
 struct ScheduleModule: Codable {
     let name: String
     let abbrev: String
     let display: ScheduleDisplay
 }
 
-/// Représente les propriétés d'affichage d'un module
 struct ScheduleDisplay: Codable {
     let colorBg: String
     let colorTxt: String
-    
+
     enum CodingKeys: String, CodingKey {
         case colorBg = "color_bg"
         case colorTxt = "color_txt"
     }
 }
 
-// MARK: - Course Filter
-
-/// Utilitaire de filtrage et de formatage des cours
 class CourseFilter {
-
-    /// Filtre les cours selon les critères spécifiés
-    /// - Parameters:
-    ///   - courses: Liste complète des cours à filtrer
-    ///   - trainProg: Programme de formation (ex: "BUT1", "CS2")
-    ///   - day: Jour de la semaine
-    ///   - cmGroup: Groupe CM (cours magistraux)
-    ///   - mainGroup: Groupe principal
-    ///   - subGroup: Sous-groupe
-    /// - Returns: Liste des cours filtrés et triés par heure de début
     static func filterCourses(
         courses: [ScheduledCourse],
         trainProg: String = "",
@@ -128,60 +106,37 @@ class CourseFilter {
     ) -> [ScheduledCourse] {
 
         let outputBase = courses.filter { course in
-            let hasTrainProg = course.course.groups.contains { $0.trainProg == trainProg }
-            let hasDay = course.day == day
-            return hasTrainProg && hasDay
+            course.course.groups.contains { $0.trainProg == trainProg } && course.day == day
         }
 
         let filtered = outputBase.filter { course in
             let groupNames = course.course.groups.map { $0.name }
-            
             let hasCM = !cmGroup.isEmpty && groupNames.contains(cmGroup)
             let hasMainGroup = !mainGroup.isEmpty && groupNames.contains(mainGroup)
             let hasSubGroup = !subGroup.isEmpty && groupNames.contains(subGroup)
-            
             return hasCM || hasMainGroup || hasSubGroup
         }
 
-        let uniqueCourses = Dictionary(grouping: filtered, by: { $0.id })
+        return Dictionary(grouping: filtered, by: { $0.id })
             .compactMap { $0.value.first }
             .sorted { $0.startTime < $1.startTime }
-
-        return uniqueCourses
     }
 
-    /// Formate l'heure de début en format HH:MM
-    /// - Parameter minutes: Nombre de minutes depuis minuit
-    /// - Returns: Chaîne formatée au format HH:MM
     static func formatTime(_ minutes: Int) -> String {
-        let hours = minutes / 60
-        let mins = minutes % 60
-        return String(format: "%02d:%02d", hours, mins)
+        String(format: "%02d:%02d", minutes / 60, minutes % 60)
     }
 
-    /// Calcule la durée d'un cours en fonction de son type et du département
-    /// - Parameters:
-    ///   - courseType: Type du cours (CM, TD, TP, etc.)
-    ///   - department: Code du département (INFO, CS, GIM, RT, LPMA)
-    /// - Returns: Durée du cours en minutes
     static func getCourseDuration(courseType: String, department: String) -> Int {
         switch department {
-        case "INFO":
-            return endTimeForInfo(type: courseType)
-        case "CS":
-            return endTimeForCS(type: courseType)
-        case "GIM":
-            return endTimeForGIM(type: courseType)
-        case "RT":
-            return endTimeForRT(type: courseType)
-        case "LPMA":
-            return endTimeForLPMA(type: courseType)
-        default:
-            return 90
+        case "INFO": return endTimeForInfo(type: courseType)
+        case "CS": return endTimeForCS(type: courseType)
+        case "GIM": return endTimeForGIM(type: courseType)
+        case "RT": return endTimeForRT(type: courseType)
+        case "LPMA": return endTimeForLPMA(type: courseType)
+        default: return 90
         }
     }
 
-    /// Durées des cours pour le département Informatique
     private static func endTimeForInfo(type: String) -> Int {
         switch type {
         case "CM", "TD", "TP", "DS", "Projet": return 85
@@ -192,8 +147,7 @@ class CourseFilter {
         default: return 90
         }
     }
-    
-    /// Durées des cours pour le département Carrières Sociales
+
     private static func endTimeForCS(type: String) -> Int {
         switch type {
         case "CM", "TD", "TP", "Accueil": return 90
@@ -201,8 +155,7 @@ class CourseFilter {
         default: return 90
         }
     }
-    
-    /// Durées des cours pour le département Génie Industriel et Maintenance
+
     private static func endTimeForGIM(type: String) -> Int {
         switch type {
         case "CM30": return 30
@@ -213,8 +166,7 @@ class CourseFilter {
         default: return 90
         }
     }
-    
-    /// Durées des cours pour le département Réseaux et Télécommunications
+
     private static func endTimeForRT(type: String) -> Int {
         switch type {
         case "CM30", "TP60", "TD60", "CM60": return type.contains("30") ? 30 : 60
@@ -227,8 +179,7 @@ class CourseFilter {
         default: return 90
         }
     }
-    
-    /// Durées des cours pour le département LP Maintenance Aéronautique
+
     private static func endTimeForLPMA(type: String) -> Int {
         switch type {
         case "CM30", "TP30": return 30

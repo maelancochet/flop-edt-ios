@@ -113,7 +113,6 @@ enum CurrentView {
 struct TrayView: View {
     var animation: Animation
 
-    @State private var isLoading = false
     @State private var currentView: CurrentView = .departements
     @State private var selectedDepartement: Departement?
     @State private var selectedPeriod: Period?

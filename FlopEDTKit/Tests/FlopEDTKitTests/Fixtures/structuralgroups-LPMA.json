@@ -1,0 +1,1 @@
+[{"id": 946, "name": "TP2", "size": 0, "basic": true, "train_prog": 251, "type": 311, "parent_groups": [944]}, {"id": 945, "name": "TP1", "size": 0, "basic": true, "train_prog": 251, "type": 311, "parent_groups": [944]}, {"id": 944, "name": "LPMA", "size": 0, "basic": false, "train_prog": 251, "type": 310, "parent_groups": []}]

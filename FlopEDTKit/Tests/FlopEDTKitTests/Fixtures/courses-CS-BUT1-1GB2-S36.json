@@ -1,0 +1,458 @@
+[
+ {
+  "id": 616304,
+  "room": {
+   "id": 71,
+   "name": "E007"
+  },
+  "start_time": 855,
+  "day": "tu",
+  "course": {
+   "id": 718295,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Accueil Promo",
+    "abbrev": "AccPromCS1",
+    "display": {
+     "color_bg": "#961d6b",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SLOP",
+  "id_visio": null,
+  "number": 2
+ },
+ {
+  "id": 616316,
+  "room": {
+   "id": 218,
+   "name": "EXT"
+  },
+  "start_time": 570,
+  "day": "th",
+  "course": {
+   "id": 718307,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Visite UT2J",
+    "abbrev": "VisitUT2J",
+    "display": {
+     "color_bg": "#9a5c0d",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "X",
+  "id_visio": null,
+  "number": 2
+ },
+ {
+  "id": 616313,
+  "room": {
+   "id": 73,
+   "name": "C004"
+  },
+  "start_time": 945,
+  "day": "w",
+  "course": {
+   "id": 718304,
+   "type": "TP",
+   "room_type": "C004",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 801,
+     "train_prog": "CS1",
+     "name": "1GB2",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Usages numériques",
+    "abbrev": "UNUM1",
+    "display": {
+     "color_bg": "#ddc0bd",
+     "color_txt": "#000000"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "LR",
+  "id_visio": null,
+  "number": null
+ },
+ {
+  "id": 616311,
+  "room": {
+   "id": 218,
+   "name": "EXT"
+  },
+  "start_time": 665,
+  "day": "th",
+  "course": {
+   "id": 718302,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "conférence scuio-ip ut2j",
+    "abbrev": "SCUOIP",
+    "display": {
+     "color_bg": "#1932bf",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "X",
+  "id_visio": null,
+  "number": 2
+ },
+ {
+  "id": 616310,
+  "room": {
+   "id": 71,
+   "name": "E007"
+  },
+  "start_time": 665,
+  "day": "f",
+  "course": {
+   "id": 718301,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Psychologie adaptée",
+    "abbrev": "PSY1",
+    "display": {
+     "color_bg": "#2d68c7",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "NICO",
+  "id_visio": null,
+  "number": 32
+ },
+ {
+  "id": 616309,
+  "room": {
+   "id": 71,
+   "name": "E007"
+  },
+  "start_time": 570,
+  "day": "f",
+  "course": {
+   "id": 718300,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Psychologie adaptée",
+    "abbrev": "PSY1",
+    "display": {
+     "color_bg": "#2d68c7",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "NICO",
+  "id_visio": null,
+  "number": 31
+ },
+ {
+  "id": 616308,
+  "room": {
+   "id": 72,
+   "name": "B006"
+  },
+  "start_time": 480,
+  "day": "w",
+  "course": {
+   "id": 718299,
+   "type": "TD",
+   "room_type": "TD",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 798,
+     "train_prog": "CS1",
+     "name": "1G2",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Expression et Communication",
+    "abbrev": "COMM1",
+    "display": {
+     "color_bg": "#ddc0bd",
+     "color_txt": "#000000"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "EBOU",
+  "id_visio": null,
+  "number": 49
+ },
+ {
+  "id": 616306,
+  "room": {
+   "id": 71,
+   "name": "E007"
+  },
+  "start_time": 665,
+  "day": "w",
+  "course": {
+   "id": 718297,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Acteurs de la société civile",
+    "abbrev": "ACSOC1",
+    "display": {
+     "color_bg": "#207a3f",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SLOP",
+  "id_visio": null,
+  "number": 14
+ },
+ {
+  "id": 616305,
+  "room": {
+   "id": 71,
+   "name": "E007"
+  },
+  "start_time": 855,
+  "day": "w",
+  "course": {
+   "id": 718296,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Acteurs de la société civile",
+    "abbrev": "ACSOC1",
+    "display": {
+     "color_bg": "#207a3f",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SLOP",
+  "id_visio": null,
+  "number": 15
+ },
+ {
+  "id": 616303,
+  "room": {
+   "id": 18,
+   "name": "Amphi1"
+  },
+  "start_time": 480,
+  "day": "tu",
+  "course": {
+   "id": 718294,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Accueil Promo",
+    "abbrev": "AccProm",
+    "display": {
+     "color_bg": "#208eb7",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SCOL",
+  "id_visio": null,
+  "number": 1
+ },
+ {
+  "id": 616302,
+  "room": {
+   "id": 18,
+   "name": "Amphi1"
+  },
+  "start_time": 570,
+  "day": "tu",
+  "course": {
+   "id": 718293,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Accueil Promo",
+    "abbrev": "AccProm",
+    "display": {
+     "color_bg": "#208eb7",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SCOL",
+  "id_visio": null,
+  "number": 2
+ },
+ {
+  "id": 616301,
+  "room": {
+   "id": 18,
+   "name": "Amphi1"
+  },
+  "start_time": 665,
+  "day": "tu",
+  "course": {
+   "id": 718292,
+   "type": "CM",
+   "room_type": "CM",
+   "week": 36,
+   "year": 2026,
+   "groups": [
+    {
+     "id": 795,
+     "train_prog": "CS1",
+     "name": "CS1",
+     "is_structural": true
+    }
+   ],
+   "supp_tutor": [],
+   "module": {
+    "name": "Accueil Promo",
+    "abbrev": "AccProm",
+    "display": {
+     "color_bg": "#208eb7",
+     "color_txt": "#FFFFFF"
+    }
+   },
+   "pay_module": null,
+   "is_graded": false
+  },
+  "tutor": "SCOL",
+  "id_visio": null,
+  "number": 3
+ }
+]

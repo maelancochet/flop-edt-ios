@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Aucun suivi, aucune donnée collectée : l'app ne fait que des GET
+	     anonymes vers flopedt.iut-blagnac.fr, et ne renvoie rien nulle part. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!-- Les deux API « à raison requise » qu'utilise l'app. Sans cette
+	     déclaration, Apple renvoie l'avertissement ITMS-91053 à chaque
+	     téléversement, et la soumission App Store est rejetée. -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<!-- UserDefaultsSelectionStorage : le département, la promo et le
+			     groupe suivis, conservés entre deux lancements. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- FileScheduleCache.prune() : la date de modification des fichiers
+			     de cache, pour supprimer les plus anciens au-delà de 24. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
